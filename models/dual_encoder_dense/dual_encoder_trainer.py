@@ -24,7 +24,8 @@ def train_main(hparams):
                      autosave=False,
                      save_dir=hparams.test_tube_dir)
 
-    exp.add_meta_tags(vars(hparams))
+    exp.add_argparse_meta(hparams)
+    exp.save()
 
     # -----------------------
     # LOAD DATASET
