@@ -12,6 +12,69 @@ from models.dual_encoder_dense.model_dual_encoder_dense import dot_product_scori
 os.environ["KERAS_BACKEND"] = 'tensorflow'
 
 
+def test_main(hparams):
+    from dataset.ubuntu_dialogue_corpus import Tokenizer
+    tokenizer = Tokenizer(hparams.vocab_path, hparams.max_seq_len)
+    def create_prediction_data(text, labels, tokenizer, mode='encode'):
+        print('creating encoding for input...')
+        print('printing input: ', text)
+        return (np.array([tokenizer.text_to_sequence(text)]),
+                tokenizer.texts_to_sequences(labels),
+                tokenizer.vocab_size())
+
+    text = "This is a test input."
+
+    data = pd.read_csv(hparams.dataset_train_path)
+    labels = data['Utterance'].values
+    text_enc, labels_enc, vocab_size = create_prediction_data(
+        text, labels, tokenizer, mode='encode')
+    x_len = text_enc.shape[0]
+    y_len = labels_enc.shape[0]
+
+    input_x = tf.placeholder(dtype=tf.int32, shape=[1, None], name='input_x')
+    input_y = tf.placeholder(dtype=tf.int32, shape=[y_len, None], name='input_y')
+
+    embedding = tf.get_variable('embedding',
+        [vocab_size, hparams.embedding_dim])
+
+    # Lookup the embeddings.
+    embedding_x = tf.nn.embedding_lookup(embedding, input_x)
+    embedding_y = tf.nn.embedding_lookup(embedding, input_y)
+
+    # Sum the embeddings for each instance.
+    x = tf.reduce_sum(embedding_x, axis=1)
+    y = tf.reduce_sum(embedding_y, axis=1)
+
+    S = dot_product_scoring(x, y, is_training=False)
+
+    value = tf.argmax(S, axis=1, name='value')
+    score = tf.reduce_max(S, axis=1, name='score')
+
+    sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+
+    saver_all = tf.train.Saver(tf.global_variables(), max_to_keep=100)
+    ckpt = tf.train.get_checkpoint_state(hparams.exp_name.upper() + '/epoch_0')
+    saver_all.restore(sess, ckpt.model_checkpoint_path)
+    sess.run(tf.global_variables_initializer())
+
+    """Print the number of parameters."""
+    total_parameters = 0
+    print("Parameters:")
+    for variable in tf.trainable_variables():
+        shape = variable.get_shape()
+        variable_parameters = 1
+        for dim in shape:
+            variable_parameters *= dim.value
+        print("\t%d\t%s" % (variable_parameters, variable.name))
+        total_parameters += variable_parameters
+    print("Total number of parameters: %d." % total_parameters)
+
+    feed_dict = {input_x: text_enc, input_y: labels_enc}
+    out_value, out_score = sess.run([value, score], feed_dict=feed_dict)
+    print('label: ', labels[out_value])
+    print('score: ', out_score)
+
+
 def train_main(hparams):
     """
     Main training routine for the dot semantic network bot

@@ -53,3 +53,4 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = hparams.gpus
 
 dual_encoder_trainer.train_main(hparams)
+dual_encoder_trainer.test_main(hparams)
