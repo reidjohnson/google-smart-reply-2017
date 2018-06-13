@@ -53,9 +53,11 @@ def test_main(hparams):
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
 
     saver_all = tf.train.Saver(tf.global_variables(), max_to_keep=100)
-    ckpt = tf.train.get_checkpoint_state(hparams.exp_name.upper() + '/epoch_0')
+
+    ckpt_path = os.path.join(hparams.model_save_dir, hparams.exp_name,
+                             'epoch_{}'.format(hparams.epoch_num))
+    ckpt = tf.train.get_checkpoint_state(ckpt_path)
     saver_all.restore(sess, ckpt.model_checkpoint_path)
-    sess.run(tf.global_variables_initializer())
 
     """Print the number of parameters."""
     total_parameters = 0

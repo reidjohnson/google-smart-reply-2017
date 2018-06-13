@@ -19,6 +19,9 @@ parser.add_argument('--optimizer_name', default='adam')
 parser.add_argument('--eval_every_n_batches', default=200, type=int)
 parser.add_argument('--train_mode', default='train')
 
+# testing params
+parser.add_argument('--epoch_num', default=0, type=int)
+
 # model params
 parser.add_argument('--nb_grams', default=2, type=int)
 
